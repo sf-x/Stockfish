@@ -602,8 +602,8 @@ namespace {
         // Null move dynamic reduction based on depth and value
         Depth R =  3 * ONE_PLY
                  + depth / 4
-                 + (abs(beta) < VALUE_KNOWN_WIN ? int(eval - beta) / PawnValueMg * ONE_PLY
-                                                : DEPTH_ZERO);
+                 + (abs(beta) < VALUE_KNOWN_WIN ? 
+                   int(eval - beta - PawnValueMg / 4) * ONE_PLY / PawnValueMg : DEPTH_ZERO);
 
         pos.do_null_move(st);
         (ss+1)->skipNullMove = true;
