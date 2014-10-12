@@ -23,12 +23,11 @@
 #include "misc.h"
 #include "types.h"
 
-/// The TTEntry is the 10 bytes transposition table entry, defined as below:
+/// The TTEntry is the 8 bytes transposition table entry, defined as below:
 ///
 /// key        16 bit
 /// move       16 bit
 /// value      16 bit
-/// eval value 16 bit
 /// generation  6 bit
 /// bound type  2 bit
 /// depth       8 bit
@@ -37,19 +36,17 @@ struct TTEntry {
 
   Move  move()  const      { return (Move )move16; }
   Value value() const      { return (Value)value16; }
-  Value eval_value() const { return (Value)evalValue; }
   Depth depth() const      { return (Depth)depth8; }
   Bound bound() const      { return (Bound)(genBound8 & 0x3); }
 
 private:
   friend class TranspositionTable;
 
-  void save(uint16_t k, Value v, Bound b, Depth d, Move m, uint8_t g, Value ev) {
+  void save(uint16_t k, Value v, Bound b, Depth d, Move m, uint8_t g) {
 
     key16     = (uint16_t)k;
     move16    = (uint16_t)m;
     value16   = (int16_t)v;
-    evalValue = (int16_t)ev;
     genBound8 = (uint8_t)(g | b);
     depth8    = (int8_t)d;
   }
@@ -57,21 +54,18 @@ private:
   uint16_t key16;
   uint16_t move16;
   int16_t  value16;
-  int16_t  evalValue;
   uint8_t  genBound8;
   int8_t   depth8;
 };
 
 /// TTCluster is a 32 bytes cluster of TT entries consisting of:
 ///
-/// 3 x TTEntry (3 x 10 bytes)
-/// padding     (2 bytes)
+/// 4 x TTEntry (4 x 8 bytes)
 
-const unsigned TTClusterSize = 3;
+const unsigned TTClusterSize = 4;
 
 struct TTCluster {
   TTEntry entry[TTClusterSize];
-  char padding[2];
 };
 
 /// A TranspositionTable consists of a power of 2 number of clusters and each
@@ -90,7 +84,7 @@ public:
   TTEntry* first_entry(const Key key) const;
   void resize(size_t mbSize);
   void clear();
-  void store(const Key key, Value v, Bound type, Depth d, Move m, Value statV);
+  void store(const Key key, Value v, Bound type, Depth d, Move m);
 
 private:
   size_t clusterCount;
