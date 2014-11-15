@@ -402,6 +402,7 @@ namespace {
 
             if (Signals.stop)
                 sync_cout << "info nodes " << RootPos.nodes_searched()
+                          << " tbhits" << TBHits
                           << " time " << Time::now() - SearchTime << sync_endl;
 
             else if (   PVIdx + 1 == std::min(multiPV, RootMoves.size())
