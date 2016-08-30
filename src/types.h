@@ -207,7 +207,7 @@ enum Piece {
 
 enum Depth {
 
-  ONE_PLY = 1,
+  ONE_PLY = 32,
 
   DEPTH_ZERO          =  0 * ONE_PLY,
   DEPTH_QS_CHECKS     =  0 * ONE_PLY,
