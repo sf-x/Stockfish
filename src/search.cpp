@@ -185,9 +185,9 @@ void Search::init() {
           {
               double r = log(d) * log(mc) / 2;
 
-              Reductions[NonPV][imp][d][mc] = std::round((r + !imp) * ONE_PLY);
-              Reductions[PV][imp][d][mc] = std::round((r - 1.0) * ONE_PLY);
-
+	      // In non-improving non-PV nodes LMR is higher, in PV nodes lower
+              Reductions[NonPV][imp][d][mc] = Depth(std::round((r + !imp) * int(ONE_PLY)));
+              Reductions[PV][imp][d][mc] = Depth(std::round((r - 1.0) * int(ONE_PLY)));
           }
 
   for (int d = 0; d < 16; ++d)
@@ -977,7 +977,7 @@ moves_loop: // When in check search starts from here
           Depth r = reduction<PvNode>(improving, depth, moveCount);
 
           if (captureOrPromotion)
-	    r = std::max(r - ONE_PLY, DEPTH_ZERO);
+              r -= ONE_PLY;
           else
           {
               // Increase reduction for cut nodes
@@ -999,7 +999,7 @@ moves_loop: // When in check search starts from here
                          +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    thisThread->fromTo.get(~pos.side_to_move(), move);
-              int rHist = (val - 8000) * ONE_PLY / 20000;
+              Depth rHist = Depth((val - 8000) * int(ONE_PLY) / 20000);
               r = (std::max(DEPTH_ZERO, r - rHist) + ONE_PLY/2) / ONE_PLY * ONE_PLY;
           }
 
