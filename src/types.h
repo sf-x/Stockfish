@@ -43,6 +43,8 @@
 #include <climits>
 #include <cstdint>
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 #if defined(_MSC_VER)
 // Disable some silly and noisy warning from MSVC compiler
@@ -100,8 +102,100 @@ const bool Is64Bit = false;
 typedef uint64_t Key;
 typedef uint64_t Bitboard;
 
+#ifdef CRAZYHOUSE
+const int MAX_MOVES = 512;
+#else
 const int MAX_MOVES = 256;
+#endif
 const int MAX_PLY   = 128;
+
+enum Variant {
+  //main variants
+  CHESS_VARIANT,
+#ifdef ANTI
+  ANTI_VARIANT,
+#endif
+#ifdef ATOMIC
+  ATOMIC_VARIANT,
+#endif
+#ifdef CRAZYHOUSE
+  CRAZYHOUSE_VARIANT,
+#endif
+#ifdef HORDE
+  HORDE_VARIANT,
+#endif
+#ifdef KOTH
+  KOTH_VARIANT,
+#endif
+#ifdef LOSERS
+  LOSERS_VARIANT,
+#endif
+#ifdef RACE
+  RACE_VARIANT,
+#endif
+#ifdef RELAY
+  RELAY_VARIANT,
+#endif
+#ifdef THREECHECK
+  THREECHECK_VARIANT,
+#endif
+  VARIANT_NB,
+  LAST_VARIANT = VARIANT_NB - 1,
+  //subvariants
+#ifdef SUICIDE
+  SUICIDE_VARIANT,
+#endif
+#ifdef BUGHOUSE
+  BUGHOUSE_VARIANT,
+#endif
+#ifdef LOOP
+  LOOP_VARIANT,
+#endif
+  SUBVARIANT_NB,
+};
+
+//static const constexpr char* variants[] doesn't play nicely with uci.h
+static std::vector<std::string> variants = {
+//main variants
+"chess",
+#ifdef ANTI
+"giveaway",
+#endif
+#ifdef ATOMIC
+"atomic",
+#endif
+#ifdef CRAZYHOUSE
+"crazyhouse",
+#endif
+#ifdef HORDE
+"horde",
+#endif
+#ifdef KOTH
+"kingofthehill",
+#endif
+#ifdef LOSERS
+"losers",
+#endif
+#ifdef RACE
+"racingkings",
+#endif
+#ifdef RELAY
+"relay",
+#endif
+#ifdef THREECHECK
+"threecheck",
+#endif
+//subvariants
+#ifdef SUICIDE
+"suicide",
+#endif
+#ifdef BUGHOUSE
+"bughouse",
+#endif
+#ifdef LOOP
+"loop",
+#endif
+};
 
 /// A move needs 16 bits to be stored
 ///
@@ -124,7 +218,17 @@ enum MoveType {
   NORMAL,
   PROMOTION = 1 << 14,
   ENPASSANT = 2 << 14,
-  CASTLING  = 3 << 14
+  CASTLING  = 3 << 14,
+  // special moves use promotion piece type bits as flags
+#if defined(ANTI) || defined(CRAZYHOUSE)
+  SPECIAL = ENPASSANT,
+#endif
+#ifdef CRAZYHOUSE
+  DROP = 1 << 12,
+#endif
+#ifdef ANTI
+  KING_PROMOTION = 2 << 12, // not used as an actual move type
+#endif
 };
 
 enum Color {
@@ -150,6 +254,14 @@ template<Color C, CastlingSide S> struct MakeCastling {
   right = C == WHITE ? S == QUEEN_SIDE ? WHITE_OOO : WHITE_OO
                      : S == QUEEN_SIDE ? BLACK_OOO : BLACK_OO;
 };
+
+#ifdef THREECHECK
+enum CheckCount {
+  CHECKS_0 = 0, CHECKS_1 = 1, CHECKS_2 = 2, CHECKS_3 = 3, CHECKS_NB = 4
+};
+
+const CheckCount CheckCounts[] = { CHECKS_0, CHECKS_1, CHECKS_2, CHECKS_3 };
+#endif
 
 enum Phase {
   PHASE_ENDGAME,
@@ -188,9 +300,67 @@ enum Value : int {
   BishopValueMg = 814,   BishopValueEg = 890,
   RookValueMg   = 1285,  RookValueEg   = 1371,
   QueenValueMg  = 2513,  QueenValueEg  = 2648,
+#ifdef ANTI
+  PawnValueMgAnti   = -128,  PawnValueEgAnti   = -160,
+  KnightValueMgAnti = -161,  KnightValueEgAnti = 193,
+  BishopValueMgAnti = -351,  BishopValueEgAnti = 118,
+  RookValueMgAnti   = -541,  RookValueEgAnti   = 58,
+  QueenValueMgAnti  = -121,  QueenValueEgAnti  = -224,
+  KingValueMgAnti   = -23,   KingValueEgAnti   = 231,
+#endif
+#ifdef ATOMIC
+  PawnValueMgAtomic   = 300,   PawnValueEgAtomic   = 437,
+  KnightValueMgAtomic = 474,   KnightValueEgAtomic = 755,
+  BishopValueMgAtomic = 652,   BishopValueEgAtomic = 762,
+  RookValueMgAtomic   = 899,   RookValueEgAtomic   = 1199,
+  QueenValueMgAtomic  = 1918,  QueenValueEgAtomic  = 2621,
+#endif
+#ifdef CRAZYHOUSE
+  PawnValueMgHouse   = 157,   PawnValueEgHouse   = 246,
+  KnightValueMgHouse = 435,   KnightValueEgHouse = 621,
+  BishopValueMgHouse = 493,   BishopValueEgHouse = 611,
+  RookValueMgHouse   = 648,   RookValueEgHouse   = 783,
+  QueenValueMgHouse  = 866,   QueenValueEgHouse  = 1247,
+#endif
+#ifdef HORDE
+  PawnValueMgHorde   = 317,   PawnValueEgHorde   = 316,
+  KnightValueMgHorde = 885,   KnightValueEgHorde = 985,
+  BishopValueMgHorde = 745,   BishopValueEgHorde = 964,
+  RookValueMgHorde   = 1060,  RookValueEgHorde   = 1187,
+  QueenValueMgHorde  = 3107,  QueenValueEgHorde  = 3266,
+  KingValueMgHorde   = 2296,  KingValueEgHorde   = 995,
+#endif
+#ifdef KOTH
+  PawnValueMgHill   = 178,   PawnValueEgHill   = 252,
+  KnightValueMgHill = 734,   KnightValueEgHill = 818,
+  BishopValueMgHill = 859,   BishopValueEgHill = 883,
+  RookValueMgHill   = 1159,  RookValueEgHill   = 1289,
+  QueenValueMgHill  = 2396,  QueenValueEgHill  = 2610,
+#endif
+#ifdef LOSERS
+  PawnValueMgLosers   = -41,   PawnValueEgLosers   = -23,
+  KnightValueMgLosers = -22,   KnightValueEgLosers = 329,
+  BishopValueMgLosers = -219,  BishopValueEgLosers = 231,
+  RookValueMgLosers   = -457,  RookValueEgLosers   = 77,
+  QueenValueMgLosers  = -122,  QueenValueEgLosers  = -213,
+#endif
+#ifdef RACE
+  KnightValueMgRace = 789,   KnightValueEgRace = 887,
+  BishopValueMgRace = 1053,  BishopValueEgRace = 1115,
+  RookValueMgRace   = 1300,  RookValueEgRace   = 1824,
+  QueenValueMgRace  = 1848,  QueenValueEgRace  = 2141,
+#endif
+#ifdef THREECHECK
+  PawnValueMgThreeCheck   = 153,   PawnValueEgThreeCheck   = 220,
+  KnightValueMgThreeCheck = 638,   KnightValueEgThreeCheck = 811,
+  BishopValueMgThreeCheck = 690,   BishopValueEgThreeCheck = 849,
+  RookValueMgThreeCheck   = 1121,  RookValueEgThreeCheck   = 1438,
+  QueenValueMgThreeCheck  = 2214,  QueenValueEgThreeCheck  = 2342,
+#endif
 
   MidgameLimit  = 15258, EndgameLimit  = 3915
 };
+extern Value PhaseLimit[VARIANT_NB][PHASE_NB];
 
 enum PieceType {
   NO_PIECE_TYPE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
@@ -207,7 +377,7 @@ enum Piece {
 
 const Piece Pieces[] = { W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
                          B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING };
-extern Value PieceValue[PHASE_NB][PIECE_NB];
+extern Value PieceValue[VARIANT_NB][PHASE_NB][PIECE_NB];
 
 enum Depth : int {
 
@@ -300,10 +470,14 @@ inline int operator/(T d1, T d2) { return int(d1) / int(d2); }  \
 inline T& operator*=(T& d, int i) { return d = T(int(d) * i); } \
 inline T& operator/=(T& d, int i) { return d = T(int(d) / i); }
 
+ENABLE_FULL_OPERATORS_ON(Variant)
 ENABLE_FULL_OPERATORS_ON(Value)
 ENABLE_FULL_OPERATORS_ON(PieceType)
 ENABLE_FULL_OPERATORS_ON(Piece)
 ENABLE_FULL_OPERATORS_ON(Color)
+#ifdef THREECHECK
+ENABLE_FULL_OPERATORS_ON(CheckCount)
+#endif
 ENABLE_FULL_OPERATORS_ON(Depth)
 ENABLE_FULL_OPERATORS_ON(Square)
 ENABLE_FULL_OPERATORS_ON(File)
@@ -414,7 +588,19 @@ inline Square pawn_push(Color c) {
   return c == WHITE ? NORTH : SOUTH;
 }
 
+#ifdef RACE
+inline Square horizontal_flip(Square s) {
+  return Square(s ^ SQ_H1); // Horizontal flip SQ_A1 -> SQ_H1
+}
+#endif
+
+inline MoveType type_of(Move m);
+
 inline Square from_sq(Move m) {
+#ifdef CRAZYHOUSE
+  if (type_of(m) == DROP)
+      return SQ_NONE;
+#endif
   return Square((m >> 6) & 0x3F);
 }
 
@@ -423,10 +609,27 @@ inline Square to_sq(Move m) {
 }
 
 inline MoveType type_of(Move m) {
+#if defined(ANTI) || defined(CRAZYHOUSE)
+  if ((m & (3 << 14)) == SPECIAL && (m & (3 << 12)))
+  {
+#ifdef CRAZYHOUSE
+      if ((m & (3 << 12)) == DROP)
+          return DROP;
+#endif
+#ifdef ANTI
+      if ((m & (3 << 12)) == KING_PROMOTION)
+          return PROMOTION;
+#endif
+  }
+#endif
   return MoveType(m & (3 << 14));
 }
 
 inline PieceType promotion_type(Move m) {
+#ifdef ANTI
+  if ((m & (3 << 12)) == KING_PROMOTION && (m & (3 << 14)) == SPECIAL)
+      return KING;
+#endif
   return PieceType(((m >> 12) & 3) + KNIGHT);
 }
 
@@ -436,11 +639,48 @@ inline Move make_move(Square from, Square to) {
 
 template<MoveType T>
 inline Move make(Square from, Square to, PieceType pt = KNIGHT) {
+#ifdef ANTI
+  if (pt == KING)
+      return Move(SPECIAL + KING_PROMOTION + (from << 6) + to);
+#endif
   return Move(T + ((pt - KNIGHT) << 12) + (from << 6) + to);
 }
 
+#ifdef CRAZYHOUSE
+inline Move make_drop(Square to, Piece pc) {
+  return Move(SPECIAL + DROP + (pc << 6) + to);
+}
+
+inline Piece dropped_piece(Move m) {
+  return Piece((m >> 6) & 15);
+}
+#endif
+
 inline bool is_ok(Move m) {
   return from_sq(m) != to_sq(m); // Catch MOVE_NULL and MOVE_NONE
+}
+
+inline Variant main_variant(Variant v) {
+  if (v < VARIANT_NB)
+      return v;
+  switch(v)
+  {
+#ifdef SUICIDE
+  case SUICIDE_VARIANT:
+      return ANTI_VARIANT;
+#endif
+#ifdef BUGHOUSE
+  case BUGHOUSE_VARIANT:
+      return CRAZYHOUSE_VARIANT;
+#endif
+#ifdef LOOP
+  case LOOP_VARIANT:
+      return CRAZYHOUSE_VARIANT;
+#endif
+  default:
+      assert(false);
+      return CHESS_VARIANT; // Silence a warning
+  }
 }
 
 #endif // #ifndef TYPES_H_INCLUDED
