@@ -517,6 +517,9 @@ namespace {
   int BishopCheck       = 588;
   int KnightCheck       = 924;
   TUNE(SetRange(0,2000),QueenCheck,RookCheck,BishopCheck,KnightCheck);
+  int QueenCheckContactBonus = 0;
+  int RookCheckContactBonus = 0;
+  TUNE(SetRange(-200,1200),QueenCheckContactBonus,RookCheckContactBonus);
 
   // Threshold for lazy evaluation
   const Value LazyThreshold = Value(1500);
@@ -745,6 +748,7 @@ namespace {
                                        : ~Bitboard(0) ^ Rank1BB ^ Rank2BB ^ Rank3BB);
 
     const Square ksq = pos.square<KING>(Us);
+    const Bitboard bk = pos.attacks_from<KING>(ksq);
     Bitboard undefended, b, b1, b2, safe, other;
     int kingDanger;
 
@@ -806,6 +810,8 @@ namespace {
         // Enemy queen safe checks
         if ((b1 | b2) & (h | ei.attackedBy[Them][QUEEN]) & safe)
             kingDanger += QueenCheck;
+        if (bk & (h | ei.attackedBy[Them][QUEEN]) & safe)
+            kingDanger += QueenCheckContactBonus;
 
         // Defended by our queen only
         Bitboard dqo =  ei.attackedBy2[Them]
@@ -832,6 +838,8 @@ namespace {
 #endif
         if (b1 & ((ei.attackedBy[Them][ROOK] & safe) | (h & dropSafe)))
             kingDanger += RookCheck;
+        if (b1 & bk & ((ei.attackedBy[Them][ROOK] & safe) | (h & dropSafe)))
+            kingDanger += RookCheckContactBonus;
 
         else if (b1 & (h | ei.attackedBy[Them][ROOK]) & other)
             score -= OtherCheck;
@@ -881,7 +889,7 @@ namespace {
             int v = kingDanger * kingDanger / 4096;
             score -=
 #ifdef CRAZYHOUSE
-                     pos.is_house() || 
+                     pos.is_house() ||
 #endif
 #ifdef THREECHECK
                      pos.is_three_check() ||
