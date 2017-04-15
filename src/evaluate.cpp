@@ -460,7 +460,8 @@ namespace {
   const Score RookOnPawn          = S(  8, 24);
   const Score TrappedRook         = S( 92,  0);
   const Score WeakQueen           = S( 50, 10);
-  const Score OtherCheck          = S( 10, 10);
+  Score OtherCheck          = S( 10, 10);
+  TUNE(OtherCheck);
   const Score CloseEnemies[VARIANT_NB] = {
     S( 7,  0),
 #ifdef ANTI
@@ -730,8 +731,10 @@ namespace {
   int ks_w_have_queen = 717;
   int ks_w_mg_score = 358;
   int ks_baseline = -5;
+  int ks_f_eg_score = 256;
   TUNE(SetRange(-200,1800), ks_maxwochecks, ks_w_undefended, ks_w_kazac, ks_w_popcnt_b,ks_w_have_queen,ks_w_mg_score);
   TUNE(SetRange(-200,200), ks_baseline);
+  TUNE(SetRange(0,768), ks_f_eg_score);
 
   template<Color Us, bool DoTrace>
   Score evaluate_king(const Position& pos, const EvalInfo& ei) {
@@ -878,12 +881,12 @@ namespace {
             int v = kingDanger * kingDanger / 4096;
             score -=
 #ifdef CRAZYHOUSE
-                     pos.is_house() ? make_score(v, v) :
+                     pos.is_house() || 
 #endif
 #ifdef THREECHECK
-                     pos.is_three_check() ? make_score(v, v) :
+                     pos.is_three_check() ||
 #endif
-                     make_score(v, 0);
+              false ?  make_score(v, ks_f_eg_score * v / 256) : make_score(v, 0);
         }
     }
 
