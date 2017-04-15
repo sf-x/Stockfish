@@ -738,6 +738,8 @@ namespace {
   TUNE(SetRange(-200,1800), ks_maxwochecks, ks_w_undefended, ks_w_kazac, ks_w_popcnt_b,ks_w_have_queen,ks_w_mg_score);
   TUNE(SetRange(-200,200), ks_baseline);
   TUNE(SetRange(0,768), ks_f_eg_score);
+  int ks_w_remainchecks[3] = {768, 512, 384};
+  TUNE(SetRange(128,1152), ks_w_remainchecks);
 
   template<Color Us, bool DoTrace>
   Score evaluate_king(const Position& pos, const EvalInfo& ei) {
@@ -876,14 +878,9 @@ namespace {
 #ifdef THREECHECK
             if (pos.is_three_check())
             {
-                switch(pos.checks_given(Them))
-                {
-                case CHECKS_NB:
-                case CHECKS_3:
-                case CHECKS_2:  kingDanger += 2 * kingDanger; break;
-                case CHECKS_1:  kingDanger += kingDanger; break;
-                case CHECKS_0:  kingDanger += kingDanger / 2; break;
-                }
+              int i = std::max(0, 2 - pos.checks_given(Them));
+              if (i < 3)
+                kingDanger = ks_w_remainchecks[i] * kingDanger / 256;
             }
 #endif
             int v = kingDanger * kingDanger / 4096;
