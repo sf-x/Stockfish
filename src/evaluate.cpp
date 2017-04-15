@@ -734,10 +734,10 @@ namespace {
   int ks_w_have_queen = 717;
   int ks_w_mg_score = 358;
   int ks_baseline = -5;
-  int ks_f_eg_score = 256;
+  int ks_f_eg_score = 0;
   TUNE(SetRange(-200,1800), ks_maxwochecks, ks_w_undefended, ks_w_kazac, ks_w_popcnt_b,ks_w_have_queen,ks_w_mg_score);
   TUNE(SetRange(-200,200), ks_baseline);
-  TUNE(SetRange(0,768), ks_f_eg_score);
+  TUNE(SetRange(-256,768), ks_f_eg_score);
 
   template<Color Us, bool DoTrace>
   Score evaluate_king(const Position& pos, const EvalInfo& ei) {
@@ -893,6 +893,9 @@ namespace {
 #endif
 #ifdef THREECHECK
                      pos.is_three_check() ||
+#endif
+#ifdef ATOMIC
+                     pos.is_atomic() ||
 #endif
               false ?  make_score(v, ks_f_eg_score * v / 256) : make_score(v, 0);
         }
