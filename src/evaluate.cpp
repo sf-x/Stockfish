@@ -511,10 +511,11 @@ namespace {
   const int KingAttackWeights[PIECE_TYPE_NB] = { 0, 0, 78, 56, 45, 11 };
 
   // Penalties for enemy's safe checks
-  const int QueenCheck        = 745;
-  const int RookCheck         = 688;
-  const int BishopCheck       = 588;
-  const int KnightCheck       = 924;
+  int QueenCheck        = 745;
+  int RookCheck         = 688;
+  int BishopCheck       = 588;
+  int KnightCheck       = 924;
+  TUNE(SetRange(0,2000),QueenCheck,RookCheck,BishopCheck,KnightCheck);
 
   // Threshold for lazy evaluation
   const Value LazyThreshold = Value(1500);
@@ -722,6 +723,16 @@ namespace {
     QueenSide, QueenSide, QueenSide, CenterFiles, CenterFiles, KingSide, KingSide, KingSide
   };
 
+  int ks_maxwochecks = 807;
+  int ks_w_undefended = 235;
+  int ks_w_kazac = 101;
+  int ks_w_popcnt_b = 134;
+  int ks_w_have_queen = 717;
+  int ks_w_mg_score = 358;
+  int ks_baseline = -5;
+  TUNE(SetRange(-200,1800), ks_maxwochecks, ks_w_undefended, ks_w_kazac, ks_w_popcnt_b,ks_w_have_queen,ks_w_mg_score);
+  TUNE(SetRange(-200,200), ks_baseline);
+
   template<Color Us, bool DoTrace>
   Score evaluate_king(const Position& pos, const EvalInfo& ei) {
 
@@ -761,12 +772,12 @@ namespace {
         // number and types of the enemy's attacking pieces, the number of
         // attacked and undefended squares around our king and the quality of
         // the pawn shelter (current 'score' value).
-        kingDanger =  std::min(807, ei.kingAttackersCount[Them] * ei.kingAttackersWeight[Them])
-                    + 101 * ei.kingAdjacentZoneAttacksCount[Them]
-                    + 235 * popcount(undefended)
-                    + 134 * (popcount(b) + !!pos.pinned_pieces(Us))
-                    - 717 * !pos.count<QUEEN>(Them)
-                    -   7 * mg_value(score) / 5 - 5;
+        kingDanger =  std::min(ks_maxwochecks, ei.kingAttackersCount[Them] * ei.kingAttackersWeight[Them])
+                    + ks_w_kazac * ei.kingAdjacentZoneAttacksCount[Them]
+                    + ks_w_undefended * popcount(undefended)
+                    + ks_w_popcnt_b * (popcount(b) + !!pos.pinned_pieces(Us))
+                    - ks_w_have_queen * !pos.count<QUEEN>(Them)
+                    - ks_w_mg_score * mg_value(score) / 256 + ks_baseline;
         Bitboard h = 0;
 
 #ifdef CRAZYHOUSE
