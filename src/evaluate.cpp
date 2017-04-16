@@ -380,12 +380,13 @@ namespace {
   };
 
 #ifdef THREECHECK
-  const Score ChecksGivenBonus[CHECKS_NB] = {
+  Score ChecksGivenBonus[CHECKS_NB] = {
       S(0, 0),
       S(489, 373),
       S(1998, 1102),
       S(0, 0)
   };
+  TUNE(SetRange(-10000,10000),ChecksGivenBonus);
 #endif
 
 #ifdef KOTH
@@ -737,9 +738,9 @@ namespace {
   int ks_f_eg_score = 256;
   TUNE(SetRange(-200,1800), ks_maxwochecks, ks_w_undefended, ks_w_kazac, ks_w_popcnt_b,ks_w_have_queen,ks_w_mg_score);
   TUNE(SetRange(-200,200), ks_baseline);
-  TUNE(SetRange(0,768), ks_f_eg_score);
+  TUNE(SetRange(-3000,3000), ks_f_eg_score);
   int ks_w_remainchecks[3] = {768, 512, 384};
-  TUNE(SetRange(128,1152), ks_w_remainchecks);
+  TUNE(SetRange(-3000,3000), ks_w_remainchecks);
 
   template<Color Us, bool DoTrace>
   Score evaluate_king(const Position& pos, const EvalInfo& ei) {
