@@ -382,8 +382,8 @@ namespace {
 #ifdef THREECHECK
   const Score ChecksGivenBonus[CHECKS_NB] = {
       S(0, 0),
-      S(489, 373),
-      S(1998, 1102),
+      S(334, 137),
+      S(2383, 614),
       S(0, 0)
   };
 #endif
@@ -537,7 +537,7 @@ namespace {
     {   807,  101,  235,  134, -717, -357,   -5,    0 },
 #endif
 #ifdef THREECHECK
-    {   807,  101,  235,  134, -717, -357,   -5,  256 },
+    {   850,   46,  165,  136, -745, -325,  -11,  234 },
 #endif
   };
 
@@ -547,6 +547,8 @@ namespace {
   const int BishopCheck       = 588;
   const int KnightCheck       = 924;
 
+  // In Q8 fixed point
+  const int ThreeCheckKSFactors[3] = {820, 772, 599};
   // Threshold for lazy evaluation
   const Value LazyThreshold = Value(1500);
 
@@ -752,7 +754,38 @@ namespace {
   const Bitboard KingFlank[FILE_NB] = {
     QueenSide, QueenSide, QueenSide, CenterFiles, CenterFiles, KingSide, KingSide, KingSide
   };
-
+  /*
+  const int KingSafetyParams[VARIANT_NB][8] = {
+        {807, 235, 101, 134, 717, 358, -5, 0}, //unused
+#ifdef ANTI
+        {807, 235, 101, 134, 717, 358, -5, 0},
+#endif
+#ifdef ATOMIC
+        {805, 305, 170, 141, 716, 367, -7, 29},
+#endif
+#ifdef CRAZYHOUSE
+        {822, 299, 148, 183, 697, 310, -1, 263},
+#endif
+#ifdef HORDE
+        {807, 235, 101, 134, 717, 358, -5, 0},
+#endif
+#ifdef KOTH
+        {807, 235, 101, 134, 717, 358, -5, 0},
+#endif
+#ifdef LOSERS
+        {807, 235, 101, 134, 717, 358, -5, 0},
+#endif
+#ifdef RACE
+        {807, 235, 101, 134, 717, 358, -5, 0},
+#endif
+#ifdef RELAY
+        {807, 235, 101, 134, 717, 358, -5, 0},
+#endif
+#ifdef THREECHECK
+        {850, 165,  46, 136, 745, 326, -11, 234},
+#endif
+  };
+  */
   template<Color Us, bool DoTrace>
   Score evaluate_king(const Position& pos, const EvalInfo& ei) {
 
@@ -887,14 +920,9 @@ namespace {
 #ifdef THREECHECK
             if (pos.is_three_check())
             {
-                switch(pos.checks_given(Them))
-                {
-                case CHECKS_NB:
-                case CHECKS_3:
-                case CHECKS_2:  kingDanger += 2 * kingDanger; break;
-                case CHECKS_1:  kingDanger += kingDanger; break;
-                case CHECKS_0:  kingDanger += kingDanger / 2; break;
-                }
+              int i = std::max(0, 2 - pos.checks_given(Them));
+              if (i < 3)
+                kingDanger = ThreeCheckKSFactors[i] * kingDanger / 256;
             }
 #endif
             int v = kingDanger * kingDanger / 4096;
