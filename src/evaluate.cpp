@@ -510,6 +510,37 @@ namespace {
   // KingAttackWeights[PieceType] contains king attack weights by piece type
   const int KingAttackWeights[PIECE_TYPE_NB] = { 0, 0, 78, 56, 45, 11 };
 
+  const int KingSafetyParams[VARIANT_NB][8] = {
+    {   807,  101,  235,  134, -717, -357,   -5,    0 },
+#ifdef ANTI
+    {   807,  101,  235,  134, -717, -357,   -5,    0 },
+#endif
+#ifdef ATOMIC
+    {   805,  305,  170,  141, -718, -367,   -7,   29 },
+#endif
+#ifdef CRAZYHOUSE
+    {   823,  148,  299,  183, -697, -309,   -1,  263 },
+#endif
+#ifdef HORDE
+    {   807,  101,  235,  134, -717, -357,   -5,    0 },
+#endif
+#ifdef KOTH
+    {   807,  101,  235,  134, -717, -357,   -5,    0 },
+#endif
+#ifdef LOSERS
+    {   807,  101,  235,  134, -717, -357,   -5,    0 },
+#endif
+#ifdef RACE
+    {   807,  101,  235,  134, -717, -357,   -5,    0 },
+#endif
+#ifdef RELAY
+    {   807,  101,  235,  134, -717, -357,   -5,    0 },
+#endif
+#ifdef THREECHECK
+    {   807,  101,  235,  134, -717, -357,   -5,  256 },
+#endif
+  };
+
   // Penalties for enemy's safe checks
   const int QueenCheck        = 745;
   const int RookCheck         = 688;
@@ -761,12 +792,14 @@ namespace {
         // number and types of the enemy's attacking pieces, the number of
         // attacked and undefended squares around our king and the quality of
         // the pawn shelter (current 'score' value).
-        kingDanger =  std::min(807, ei.kingAttackersCount[Them] * ei.kingAttackersWeight[Them])
-                    + 101 * ei.kingAdjacentZoneAttacksCount[Them]
-                    + 235 * popcount(undefended)
-                    + 134 * (popcount(b) + !!pos.pinned_pieces(Us))
-                    - 717 * !pos.count<QUEEN>(Them)
-                    -   7 * mg_value(score) / 5 - 5;
+
+        const auto KSP = KingSafetyParams[pos.variant()];
+        kingDanger =  std::min(KSP[0], ei.kingAttackersCount[Them] * ei.kingAttackersWeight[Them])
+                    + KSP[1] * ei.kingAdjacentZoneAttacksCount[Them]
+                    + KSP[2] * popcount(undefended)
+                    + KSP[3] * (popcount(b) + !!pos.pinned_pieces(Us))
+                    + KSP[4] * !pos.count<QUEEN>(Them)
+                    + KSP[5] * mg_value(score) / 255 + KSP[6];
         Bitboard h = 0;
 
 #ifdef CRAZYHOUSE
@@ -865,14 +898,7 @@ namespace {
             }
 #endif
             int v = kingDanger * kingDanger / 4096;
-            score -=
-#ifdef CRAZYHOUSE
-                     pos.is_house() ? make_score(v, v) :
-#endif
-#ifdef THREECHECK
-                     pos.is_three_check() ? make_score(v, v) :
-#endif
-                     make_score(v, 0);
+            score -= make_score(v, KSP[7] * v / 256);
         }
     }
 
@@ -1295,13 +1321,13 @@ namespace {
 #endif
 
     // ...count safe + (behind & safe) with a single popcount.
-    int bonus = popcount((Us == WHITE ? safe << 32 : safe >> 32) | (behind & safe));
+    int bonus;
 #ifdef HORDE
     if (pos.is_horde())
         bonus = popcount(safe) + popcount(behind & safe);
     else
 #endif
-    bonus = std::min(16, bonus);
+    bonus = popcount((Us == WHITE ? safe << 32 : safe >> 32) | (behind & safe));
     int weight = pos.count<ALL_PIECES>(Us) - 2 * ei.pe->open_files();
 #ifdef THREECHECK
     if (pos.is_three_check())
@@ -1317,7 +1343,7 @@ namespace {
               + KothSafeCenter * popcount(safe & behind & (Rank4BB | Rank5BB) & (FileDBB | FileEBB));
 #endif
 
-    return make_score(bonus * weight * weight / 18, 0);
+    return make_score(bonus * weight * weight / 16, 0);
   }
 
 
