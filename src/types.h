@@ -151,6 +151,9 @@ enum Variant {
 #ifdef LOOP
   LOOP_VARIANT,
 #endif
+#ifdef THREECHECK
+  THREECHECK_ALT_NAME_VARIANT,
+#endif
   SUBVARIANT_NB,
 };
 
@@ -183,7 +186,7 @@ static std::vector<std::string> variants = {
 "relay",
 #endif
 #ifdef THREECHECK
-"threecheck",
+"3check",
 #endif
 //subvariants
 #ifdef SUICIDE
@@ -194,6 +197,9 @@ static std::vector<std::string> variants = {
 #endif
 #ifdef LOOP
 "loop",
+#endif
+#ifdef THREECHECK
+"threecheck"
 #endif
 };
 
@@ -676,6 +682,10 @@ inline Variant main_variant(Variant v) {
 #ifdef LOOP
   case LOOP_VARIANT:
       return CRAZYHOUSE_VARIANT;
+#endif
+#ifdef THREECHECK
+  case THREECHECK_ALT_NAME_VARIANT:
+    return THREECHECK_VARIANT;
 #endif
   default:
       assert(false);
