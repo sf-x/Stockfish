@@ -835,6 +835,12 @@ bool Position::legal(Move m) const {
           return true;
   }
 #endif
+// Because DROP is encoded as ENPASSANT, this ought to be before en-passant,
+// to avoid bugs in the future.
+#ifdef CRAZYHOUSE
+  if (is_house() && type_of(m) == DROP)
+      return pieceCountInHand[us][type_of(moved_piece(m))] && empty(to_sq(m));
+#endif
 
   // En passant captures are a tricky special case. Because they are rather
   // uncommon, we do it simply by testing whether the king is attacked after
@@ -854,11 +860,6 @@ bool Position::legal(Move m) const {
       return   !(attacks_bb<  ROOK>(ksq, occupied) & pieces(~us, QUEEN, ROOK))
             && !(attacks_bb<BISHOP>(ksq, occupied) & pieces(~us, QUEEN, BISHOP));
   }
-
-#ifdef CRAZYHOUSE
-  if (is_house() && type_of(m) == DROP)
-      return pieceCountInHand[us][type_of(moved_piece(m))] && empty(to_sq(m));
-#endif
 
 #ifdef ATOMIC
   if (is_atomic() && type_of(piece_on(from)) == KING && type_of(m) != CASTLING)

@@ -866,7 +866,7 @@ const Score Bonus[VARIANT_NB][PIECE_TYPE_NB][RANK_NB][int(FILE_NB) / 2] = {
 };
 
 #ifdef CRAZYHOUSE
-Score psq[VARIANT_NB][PIECE_NB][SQUARE_NB+1];
+Score psq[VARIANT_NB][PIECE_NB][SQUARE_NB+PIECE_NB];
 const Score inHandBonus[PIECE_TYPE_NB] = {
     S(0, 0), S(52, 13), S(66, 30), S(4, 4), S(13, 3), S(25, 9)
 };
@@ -901,8 +901,11 @@ void init() {
               psq[var][~pc][~s] = -psq[var][pc][s];
           }
 #ifdef CRAZYHOUSE
-          psq[var][ pc][SQ_NONE] = v + inHandBonus[type_of(pc)];
-          psq[var][~pc][SQ_NONE] = -psq[var][pc][SQ_NONE];
+          {
+              auto tmp = v + inHandBonus[type_of(pc)];
+              psq[var][ pc][SQ_NONE +  pc] = tmp;
+              psq[var][~pc][SQ_NONE + ~pc] = -tmp;
+          }
 #endif
       }
 }

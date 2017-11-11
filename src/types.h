@@ -627,11 +627,11 @@ inline Square horizontal_flip(Square s) {
 inline MoveType type_of(Move m);
 
 inline Square from_sq(Move m) {
+  return Square( ((m >> 6) & 0x3F)
 #ifdef CRAZYHOUSE
-  if (type_of(m) == DROP)
-      return SQ_NONE;
+         + (type_of(m) == DROP ? 0x40 : 0)
 #endif
-  return Square((m >> 6) & 0x3F);
+         );
 }
 
 inline Square to_sq(Move m) {
@@ -641,7 +641,7 @@ inline Square to_sq(Move m) {
 inline int from_to(Move m) {
 #ifdef CRAZYHOUSE
   if (type_of(m) == DROP)
-      return (m & 0x3F) + 0x1000;
+      return (m & 0xFFF) + 0x1000;
 #endif
  return m & 0xFFF;
 }
