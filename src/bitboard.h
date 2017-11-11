@@ -62,7 +62,8 @@ const Bitboard Rank8BB = Rank1BB << (8 * 7);
 
 extern int SquareDistance[SQUARE_NB][SQUARE_NB];
 
-extern Bitboard SquareBB[SQUARE_NB];
+// to accommodate fake squares from which crazyhouse pieces in hand move
+extern Bitboard SquareBB[SQUARE_NB+PIECE_NB]; 
 extern Bitboard FileBB[FILE_NB];
 extern Bitboard RankBB[RANK_NB];
 extern Bitboard AdjacentFilesBB[FILE_NB];

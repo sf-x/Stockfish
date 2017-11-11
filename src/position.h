@@ -279,7 +279,7 @@ private:
   void do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto);
 
   // Data members
-  Piece board[SQUARE_NB];
+  Piece board[SQUARE_NB+PIECE_NB];
   Bitboard byTypeBB[PIECE_TYPE_NB];
   Bitboard byColorBB[COLOR_NB];
   int pieceCount[PIECE_NB];

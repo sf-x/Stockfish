@@ -71,7 +71,8 @@ struct StatCubes : public std::array<std::array<std::array<T, Size3>, Size2>, Si
 /// ButterflyBoards are 2 tables (one for each color) indexed by the move's from
 /// and to squares, see chessprogramming.wikispaces.com/Butterfly+Boards
 #ifdef CRAZYHOUSE
-typedef StatBoards<COLOR_NB, int(SQUARE_NB + 1) * int(SQUARE_NB)> ButterflyBoards;
+// For compactness, ought to be  + PIECE_TYPE_NB, but requires more changes
+typedef StatBoards<COLOR_NB, int(SQUARE_NB + PIECE_NB) * int(SQUARE_NB)> ButterflyBoards;
 #else
 typedef StatBoards<COLOR_NB, int(SQUARE_NB) * int(SQUARE_NB)> ButterflyBoards;
 #endif
