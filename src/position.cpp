@@ -37,11 +37,7 @@
 using std::string;
 
 namespace PSQT {
-#ifdef CRAZYHOUSE
-  extern Score psq[VARIANT_NB][PIECE_NB][SQUARE_NB+1];
-#else
-  extern Score psq[VARIANT_NB][PIECE_NB][SQUARE_NB];
-#endif
+  extern Score psq[VARIANT_NB][PIECE_NB][SQUARE_NB+PIECE_NB];
 }
 
 namespace Zobrist {
