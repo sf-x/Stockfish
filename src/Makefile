@@ -98,7 +98,7 @@ debug = no
 sanitize = no
 bits = 64
 prefetch = no
-popcnt = no
+popcnt ?= no
 sse = no
 ssse3 = no
 sse41 = no
@@ -106,6 +106,7 @@ sse42 = no
 avx2 = no
 pext = no
 
+export popcnt
 ### 2.2 Architecture specific
 ifeq ($(ARCH),general-32)
 	arch = any
@@ -402,6 +403,11 @@ endif
 ### 3.6 popcnt
 ifeq ($(popcnt),yes)
 	CXXFLAGS += -DUSE_POPCNT
+	ifeq ($(arch),$(filter $(arch),i386 x86_64))
+		ifneq ($(comp),icc)
+			CXXFLAGS += -mpopcnt
+		endif
+	endif
 endif
 
 ifeq ($(avx2),yes)
@@ -515,6 +521,9 @@ help:
 	@echo "clang                   > LLVM Clang compiler"
 	@echo "icc                     > Intel compiler"
 	@echo "msys2                   > MSYS2"
+	@echo ""
+	@echo "For x86 targets, you can also add popcnt=yes to the command line."
+	@echo "This enables the POPCNT instruction."
 	@echo ""
 	@echo "Simple examples. If you don't know what to do, you likely want to run: "
 	@echo ""
