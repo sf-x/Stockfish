@@ -55,7 +55,9 @@ SRCS = benchmark.cpp bitbase.cpp bitboard.cpp endgame.cpp evaluate.cpp main.cpp 
 	learn/learning_tools.cpp \
 	learn/multi_think.cpp
 
-OBJS = $(SRCS:.cpp=.o)
+OBJSNONN = $(SRCS:.cpp=.o) 
+
+OBJS = $(OBJSNONN) nn.o
 
 VPATH = syzygy
 
@@ -633,6 +635,9 @@ config-sanity:
 	@test "$(pext)" = "yes" || test "$(pext)" = "no"
 	@test "$(comp)" = "gcc" || test "$(comp)" = "icc" || test "$(comp)" = "mingw" || test "$(comp)" = "clang"
 
+nn.o: eval/nn.bin
+	ld -r -b binary eval/nn.bin -o nn.o
+
 $(EXE): $(OBJS)
 	$(CXX) -o $@ $(OBJS) $(LDFLAGS)
 
@@ -686,6 +691,6 @@ nnue-learn: config-sanity
 	$(MAKE) CXXFLAGS='$(CXXFLAGS) -DEVAL_LEARN -DEVAL_NNUE -DUSE_EVAL_HASH -DENABLE_TEST_CMD -DUSE_BLAS -I/mingw64/include/OpenBLAS -fopenmp' LDFLAGS='$(LDFLAGS) -lopenblas -fopenmp' build
 
 .depend:
-	-@$(CXX) $(DEPENDFLAGS) -MM $(OBJS:.o=.cpp) > $@ 2> /dev/null
+	-@$(CXX) $(DEPENDFLAGS) -MM $(OBJSNONN:.o=.cpp) > $@ 2> /dev/null
 
 -include .depend
