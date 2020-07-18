@@ -11,6 +11,9 @@
 #include "../../uci.h"
 
 #include "evaluate_nnue.h"
+#include "char_array_buffer.hpp"
+
+extern "C" char _binary_eval_nn_bin_start, _binary_eval_nn_bin_end;
 
 namespace Eval {
 
@@ -232,32 +235,22 @@ void prefetch_evalhash(const Key key) {
 }
 #endif
 
-// read the evaluation function file
-// Save and restore Options with bench command etc., so EvalDir is changed at this time,
-// This function may be called twice to flag that the evaluation function needs to be reloaded.
+// read the evaluation parameters.
 void load_eval() {
 
   // Must be done!
   NNUE::Initialize();
-
-  if (Options["SkipLoadingEval"])
-  {
-      std::cout << "info string SkipLoadingEval set to true, Net not loaded!" << std::endl;
-      return;
-  }
-
-  const std::string file_name = Options["EvalFile"];
-  NNUE::fileName = file_name;
-
-  std::ifstream stream(file_name, std::ios::binary);
+  
+  char_array_buffer buff(&_binary_eval_nn_bin_start, &_binary_eval_nn_bin_end);
+  std::istream stream(&buff);
   const bool result = NNUE::ReadParameters(stream);
 
   if (!result)
       // It's a problem if it doesn't finish when there is a read error.
-      std::cout << "Error! " << NNUE::fileName << " not found or wrong format" << std::endl;
+      std::cout << "Error: Cannot load embedded parameter set (executable miscompiled or corrupt)" << std::endl;
 
   else
-      std::cout << "info string NNUE " << NNUE::fileName << " found & loaded" << std::endl;
+      std::cout << "info string Embedded parameter set loaded" << std::endl;
 }
 
 // Initialization
