@@ -62,6 +62,17 @@ class AffineTransform {
     stream.read(reinterpret_cast<char*>(weights_),
                 kOutputDimensions * kPaddedInputDimensions *
                 sizeof(WeightType));
+    int cnt = 0, cnt2 = 0;
+    for (int i=0; i<sizeof(weights_)/sizeof(*weights_); ++i) {
+	    if (weights_[i] > 64 || weights_[i] < -64) ++cnt;
+    }
+    for (int i=0; i<sizeof(weights_)/sizeof(*weights_); i+=2) {
+	    int tmp = weights_[i] + weights_[i+1] ;
+	    if (tmp< -128 ||tmp >128) ++cnt2;
+    }
+
+    std::cout << cnt << " non-small weights\n" << cnt2 << " non-small pairs\n"
+	    << "total: " << sizeof(weights_)/sizeof(*weights_) << "\n";
     return !stream.fail();
   }
 
