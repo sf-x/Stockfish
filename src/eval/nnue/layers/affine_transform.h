@@ -137,21 +137,35 @@ class AffineTransform {
       }
 #elif defined(USE_AVX2)
       __m256i sum = _mm256_setzero_si256();
+      __m256i sum2 = _mm256_setzero_si256();
       const auto row = reinterpret_cast<const __m256i*>(&weights_[offset]);
-      for (IndexType j = 0; j < kNumChunks; ++j) {
-        __m256i product = _mm256_maddubs_epi16(
+      int j = - (kNumChunks & 1);
+      const auto base = row + j;
+      __m256i product2;
+      if (j) goto mid_loop;
+      do {
 #if defined(__MINGW32__) || defined(__MINGW64__)
           // HACK: Use _mm256_loadu_si256() instead of _mm256_load_si256. Because the binary
           //       compiled with g++ in MSYS2 crashes here because the output memory is not aligned
           //       even though alignas is specified.
-          _mm256_loadu_si256
+#define LOAD256 _mm256_loadu_si256
 #else
-          _mm256_load_si256
+#define LOAD256 _mm256_load_si256
 #endif
-          (&input_vector[j]), _mm256_load_si256(&row[j]));
-        product = _mm256_madd_epi16(product, kOnes);
-        sum = _mm256_add_epi32(sum, product);
-      }
+	product2 = _mm256_maddubs_epi16(
+	  LOAD256(&input_vector[j]), _mm256_load_si256(&base[j]));
+	sum2 = _mm256_add_epi32(sum2, _mm256_srai_epi32(product2, 16));
+	product2 = _mm256_srai_epi32(_mm256_slli_epi32(product2,16), 16);
+	sum2 = _mm256_add_epi32(sum2, product2);
+mid_loop:
+        __m256i product1 = _mm256_maddubs_epi16(
+          LOAD256(&input_vector[j+1]), _mm256_load_si256(&base[j+1]));
+        product1 = _mm256_madd_epi16(product1, kOnes);
+        sum = _mm256_add_epi32(sum, product1);
+	j += 2;
+#undef LOAD256
+      } while (j < kNumChunks);
+      sum = _mm256_add_epi32(sum, sum2);
       sum = _mm256_hadd_epi32(sum, sum);
       sum = _mm256_hadd_epi32(sum, sum);
       const __m128i lo = _mm256_extracti128_si256(sum, 0);
