@@ -83,12 +83,12 @@ namespace Eval::NNUE {
       }
       const auto& accumulation = pos.state()->accumulator.accumulation;
 
-  #if defined(USE_AVX2)
+  #if defined(USE_AVX2) && !defined(NNUE_NOINT8)
       constexpr IndexType kNumChunks = kHalfDimensions / kSimdWidth;
       constexpr int kControl = 0b11011000;
       const __m256i kZero = _mm256_setzero_si256();
 
-  #elif defined(USE_SSSE3)
+  #elif defined(USE_SSSE3) && !defined(NNUE_NOINT8)
       constexpr IndexType kNumChunks = kHalfDimensions / kSimdWidth;
 
   #ifdef USE_SSE41
@@ -97,7 +97,7 @@ namespace Eval::NNUE {
       const __m128i k0x80s = _mm_set1_epi8(-128);
   #endif
 
-  #elif defined(USE_NEON)
+  #elif defined(USE_NEON) && !defined(NNUE_NOINT8)
       constexpr IndexType kNumChunks = kHalfDimensions / (kSimdWidth / 2);
       const int8x8_t kZero = {0};
   #endif
@@ -106,7 +106,7 @@ namespace Eval::NNUE {
       for (IndexType p = 0; p < 2; ++p) {
         const IndexType offset = kHalfDimensions * p;
 
-  #if defined(USE_AVX2)
+  #if defined(USE_AVX2) && !defined(NNUE_NOINT8)
         auto out = reinterpret_cast<__m256i*>(&output[offset]);
         for (IndexType j = 0; j < kNumChunks; ++j) {
           __m256i sum0 =
@@ -143,7 +143,7 @@ namespace Eval::NNUE {
               _mm256_packs_epi16(sum0, sum1), kZero), kControl));
         }
 
-  #elif defined(USE_SSSE3)
+  #elif defined(USE_SSSE3) && !defined(NNUE_NOINT8)
         auto out = reinterpret_cast<__m128i*>(&output[offset]);
         for (IndexType j = 0; j < kNumChunks; ++j) {
           __m128i sum0 = _mm_load_si128(&reinterpret_cast<const __m128i*>(
@@ -163,7 +163,7 @@ namespace Eval::NNUE {
           );
         }
 
-  #elif defined(USE_NEON)
+  #elif defined(USE_NEON) && !defined(NNUE_NOINT8)
         const auto out = reinterpret_cast<int8x8_t*>(&output[offset]);
         for (IndexType j = 0; j < kNumChunks; ++j) {
           int16x8_t sum = reinterpret_cast<const int16x8_t*>(

@@ -33,8 +33,11 @@ namespace Eval::NNUE::Layers {
     // Input/output type
     using InputType = typename PreviousLayer::OutputType;
     using OutputType = std::int32_t;
+#ifndef NNUE_NOINT8
     static_assert(std::is_same<InputType, std::uint8_t>::value, "");
-
+#else
+    static_assert(std::is_same<InputType, std::uint16_t>::value, "");
+#endif
     // Number of input/output dimensions
     static constexpr IndexType kInputDimensions =
         PreviousLayer::kOutputDimensions;
@@ -64,9 +67,17 @@ namespace Eval::NNUE::Layers {
       if (!previous_layer_.ReadParameters(stream)) return false;
       stream.read(reinterpret_cast<char*>(biases_),
                   kOutputDimensions * sizeof(BiasType));
+#ifndef NNUE_NOINT8
       stream.read(reinterpret_cast<char*>(weights_),
                   kOutputDimensions * kPaddedInputDimensions *
                   sizeof(WeightType));
+#else
+      char temp;
+      for (int i=0; i< kOutputDimensions * kPaddedInputDimensions; ++i) {
+        stream.read(&temp,sizeof(uint8_t));
+        weights_[i] = (int16_t)(int8_t) temp;
+    }
+#endif
       return !stream.fail();
     }
 
@@ -77,22 +88,26 @@ namespace Eval::NNUE::Layers {
           transformed_features, buffer + kSelfBufferSize);
       const auto output = reinterpret_cast<OutputType*>(buffer);
 
-  #if defined(USE_AVX512)
+  #if defined(USE_AVX512) && !defined(NNUE_NOINT8)
       constexpr IndexType kNumChunks = kPaddedInputDimensions / (kSimdWidth * 2);
       const __m512i kOnes = _mm512_set1_epi16(1);
       const auto input_vector = reinterpret_cast<const __m512i*>(input);
 
-  #elif defined(USE_AVX2)
+  #elif defined(USE_AVX2) && !defined(NNUE_NOINT8)
       constexpr IndexType kNumChunks = kPaddedInputDimensions / kSimdWidth;
       const __m256i kOnes = _mm256_set1_epi16(1);
       const auto input_vector = reinterpret_cast<const __m256i*>(input);
 
-  #elif defined(USE_SSSE3)
+  #elif defined(USE_SSSE3) && !defined(NNUE_NOINT8)
       constexpr IndexType kNumChunks = kPaddedInputDimensions / kSimdWidth;
       const __m128i kOnes = _mm_set1_epi16(1);
       const auto input_vector = reinterpret_cast<const __m128i*>(input);
 
-  #elif defined(USE_NEON)
+  #elif defined(USE_SSE2) && defined(NNUE_NOINT8)
+      constexpr IndexType kNumChunks = kPaddedInputDimensions / (kSimdWidth / 2);
+      const auto input_vector = reinterpret_cast<const __m128i*>(input);
+
+  #elif defined(USE_NEON) && !defined(NNUE_NOINT8)
       constexpr IndexType kNumChunks = kPaddedInputDimensions / kSimdWidth;
       const auto input_vector = reinterpret_cast<const int8x8_t*>(input);
   #endif
@@ -100,7 +115,7 @@ namespace Eval::NNUE::Layers {
       for (IndexType i = 0; i < kOutputDimensions; ++i) {
         const IndexType offset = i * kPaddedInputDimensions;
 
-  #if defined(USE_AVX512)
+  #if defined(USE_AVX512) && !defined(NNUE_NOINT8)
         __m512i sum = _mm512_setzero_si512();
         const auto row = reinterpret_cast<const __m512i*>(&weights_[offset]);
         for (IndexType j = 0; j < kNumChunks; ++j) {
@@ -139,7 +154,7 @@ namespace Eval::NNUE::Layers {
             output[i] += _mm_cvtsi128_si32(lo) + _mm_cvtsi128_si32(hi);
         }
 
-  #elif defined(USE_AVX2)
+  #elif defined(USE_AVX2) && !defined(NNUE_NOINT8)
         __m256i sum = _mm256_setzero_si256();
         const auto row = reinterpret_cast<const __m256i*>(&weights_[offset]);
         for (IndexType j = 0; j < kNumChunks; ++j) {
@@ -164,7 +179,7 @@ namespace Eval::NNUE::Layers {
         const __m128i hi = _mm256_extracti128_si256(sum, 1);
         output[i] = _mm_cvtsi128_si32(lo) + _mm_cvtsi128_si32(hi) + biases_[i];
 
-  #elif defined(USE_SSSE3)
+  #elif defined(USE_SSSE3) && !defined(NNUE_NOINT8)
         __m128i sum = _mm_cvtsi32_si128(biases_[i]);
         const auto row = reinterpret_cast<const __m128i*>(&weights_[offset]);
         for (IndexType j = 0; j < kNumChunks; ++j) {
@@ -177,7 +192,19 @@ namespace Eval::NNUE::Layers {
         sum = _mm_hadd_epi32(sum, sum);
         output[i] = _mm_cvtsi128_si32(sum);
 
-  #elif defined(USE_NEON)
+  #elif defined(NNUE_NOINT8) && defined(USE_SSE2)
+        __m128i sum = _mm_cvtsi32_si128(biases_[i]);
+        const auto row = reinterpret_cast<const __m128i*>(&weights_[offset]);
+        for (IndexType j = 0; j < kNumChunks; ++j) {
+          __m128i product = _mm_madd_epi16(
+              _mm_load_si128(&input_vector[j]), _mm_load_si128(&row[j]));
+          sum = _mm_add_epi32(sum, product);
+        }
+        sum = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, 0b00001110));
+        sum = _mm_add_epi32(sum, _mm_shufflelo_epi16(sum, 0b00001110));
+        output[i] = _mm_cvtsi128_si32(sum);
+
+  #elif defined(USE_NEON) && !defined(NNUE_NOINT8)
         int32x4_t sum = {biases_[i]};
         const auto row = reinterpret_cast<const int8x8_t*>(&weights_[offset]);
         for (IndexType j = 0; j < kNumChunks; ++j) {
@@ -201,8 +228,11 @@ namespace Eval::NNUE::Layers {
 
    private:
     using BiasType = OutputType;
+#ifndef NNUE_NOINT8
     using WeightType = std::int8_t;
-
+#else
+    using WeightType = std::int16_t;
+#endif
     PreviousLayer previous_layer_;
 
     alignas(kCacheLineSize) BiasType biases_[kOutputDimensions];

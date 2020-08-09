@@ -31,7 +31,11 @@ namespace Eval::NNUE::Layers {
    public:
     // Input/output type
     using InputType = typename PreviousLayer::OutputType;
+#ifndef NNUE_NOINT8
     using OutputType = std::uint8_t;
+#else
+  using OutputType = std::uint16_t;
+#endif
     static_assert(std::is_same<InputType, std::int32_t>::value, "");
 
     // Number of input/output dimensions
@@ -66,7 +70,7 @@ namespace Eval::NNUE::Layers {
           transformed_features, buffer + kSelfBufferSize);
       const auto output = reinterpret_cast<OutputType*>(buffer);
 
-  #if defined(USE_AVX2)
+  #if defined(USE_AVX2) && !defined (NNUE_NOINT8)
       constexpr IndexType kNumChunks = kInputDimensions / kSimdWidth;
       const __m256i kZero = _mm256_setzero_si256();
       const __m256i kOffsets = _mm256_set_epi32(7, 3, 6, 2, 5, 1, 4, 0);
@@ -122,7 +126,7 @@ namespace Eval::NNUE::Layers {
       }
       constexpr IndexType kStart = kNumChunks * kSimdWidth;
 
-  #elif defined(USE_SSSE3)
+  #elif defined(USE_SSSE3) && !defined (NNUE_NOINT8)
       constexpr IndexType kNumChunks = kInputDimensions / kSimdWidth;
 
   #ifdef USE_SSE41
@@ -153,7 +157,7 @@ namespace Eval::NNUE::Layers {
       }
       constexpr IndexType kStart = kNumChunks * kSimdWidth;
 
-  #elif defined(USE_NEON)
+  #elif defined(USE_NEON) && !defined (NNUE_NOINT8)
       constexpr IndexType kNumChunks = kInputDimensions / (kSimdWidth / 2);
       const int8x8_t kZero = {0};
       const auto in = reinterpret_cast<const int32x4_t*>(input);
