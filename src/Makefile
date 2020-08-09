@@ -127,13 +127,6 @@ ifeq ($(ARCH),x86-64)
 	sse = yes
 endif
 
-ifeq ($(ARCH),x86-64-sse3)
-	arch = x86_64
-	prefetch = yes
-	sse = yes
-	sse3 = yes
-endif
-
 ifeq ($(ARCH),x86-64-sse3-popcnt)
 	arch = x86_64
 	prefetch = yes
@@ -150,16 +143,6 @@ ifeq ($(ARCH),x86-64-ssse3)
 	ssse3 = yes
 endif
 
-ifeq ($(ARCH),x86-64-sse41)
-	arch = x86_64
-	prefetch = yes
-	popcnt = yes
-	sse = yes
-	sse3 = yes
-	ssse3 = yes
-	sse41 = yes
-endif
-
 ifeq ($(ARCH),x86-64-modern)
 	arch = x86_64
 	prefetch = yes
@@ -170,7 +153,7 @@ ifeq ($(ARCH),x86-64-modern)
 	sse41 = yes
 endif
 
-ifeq ($(ARCH),x86-64-sse42)
+ifeq ($(ARCH),x86-64-sse41-popcnt)
 	arch = x86_64
 	prefetch = yes
 	popcnt = yes
@@ -178,7 +161,6 @@ ifeq ($(ARCH),x86-64-sse42)
 	sse3 = yes
 	ssse3 = yes
 	sse41 = yes
-	sse42 = yes
 endif
 
 ifeq ($(ARCH),x86-64-avx2)
@@ -451,7 +433,6 @@ ifeq ($(avx512),yes)
 endif
 
 ifeq ($(sse42),yes)
-	CXXFLAGS += -DUSE_SSE42
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw))
 		CXXFLAGS += -msse4.2
 	endif
@@ -472,7 +453,6 @@ ifeq ($(ssse3),yes)
 endif
 
 ifeq ($(sse3),yes)
-	CXXFLAGS += -DUSE_SSE3
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw))
 		CXXFLAGS += -msse3
 	endif
@@ -557,12 +537,10 @@ help:
 	@echo "x86-64-avx512           > x86 64-bit with avx512 support"
 	@echo "x86-64-bmi2             > x86 64-bit with bmi2 support"
 	@echo "x86-64-avx2             > x86 64-bit with avx2 support"
-	@echo "x86-64-sse42            > x86 64-bit with sse42 support"
-	@echo "x86-64-modern           > x86 64-bit with sse41 support (x86-64-sse41)"
-	@echo "x86-64-sse41            > x86 64-bit with sse41 support"
+	@echo "x86-64-sse41-popcnt     > x86 64-bit with sse41 and popcnt support"
+	@echo "x86-64-modern           > the same as previous (x86-64-sse41-popcnt)"
 	@echo "x86-64-ssse3            > x86 64-bit with ssse3 support"
 	@echo "x86-64-sse3-popcnt      > x86 64-bit with sse3 and popcnt support"
-	@echo "x86-64-sse3             > x86 64-bit with sse3 support"
 	@echo "x86-64                  > x86 64-bit generic"
 	@echo "x86-32                  > x86 32-bit (also enables SSE)"
 	@echo "x86-32-old              > x86 32-bit fall back for old hardware"
