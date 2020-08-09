@@ -40,8 +40,11 @@ constexpr std::size_t kSimdWidth = 16;
 constexpr std::size_t kMaxSimdWidth = 32;
 
 // Type of input feature after conversion
+#ifndef NNUE_NOINT8
 using TransformedFeatureType = std::uint8_t;
-
+#else
+using TransformedFeatureType = std::uint16_t;
+#endif
 // index type
 using IndexType = std::uint32_t;
 

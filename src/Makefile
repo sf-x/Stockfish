@@ -99,6 +99,7 @@ debug = no
 sanitize = no
 bits = 64
 prefetch = no
+nnue_noint8 = no
 popcnt = no
 sse = no
 sse3 = no
@@ -135,6 +136,7 @@ ifeq ($(ARCH),x86-64)
 	arch = x86_64
 	prefetch = yes
 	sse = yes
+	nnue_noint8 = yes
 endif
 
 ifeq ($(ARCH),x86-64-sse3)
@@ -495,6 +497,10 @@ ifeq ($(arch),x86_64)
 	CXXFLAGS += -DUSE_SSE2
 endif
 
+ifeq ($(nnue_noint8),yes)
+	CXXFLAGS += -DNNUE_NOINT8
+endif
+
 ### 3.7 pext
 ifeq ($(pext),yes)
 	CXXFLAGS += -DUSE_PEXT
@@ -688,6 +694,7 @@ config-sanity:
 	 test "$(arch)" = "armv7" || test "$(arch)" = "armv8-a"
 	@test "$(bits)" = "32" || test "$(bits)" = "64"
 	@test "$(prefetch)" = "yes" || test "$(prefetch)" = "no"
+	@test "$(nnue_noint8)" = "yes" || test "$(nnue_noint8)" = "no"
 	@test "$(popcnt)" = "yes" || test "$(popcnt)" = "no"
 	@test "$(sse)" = "yes" || test "$(sse)" = "no"
 	@test "$(sse3)" = "yes" || test "$(sse3)" = "no"

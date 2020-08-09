@@ -19,7 +19,11 @@ class ClippedReLU {
  public:
   // Input/output type
   using InputType = typename PreviousLayer::OutputType;
+#ifndef NNUE_NOINT8
   using OutputType = std::uint8_t;
+#else
+  using OutputType = std::uint16_t;
+#endif
   static_assert(std::is_same<InputType, std::int32_t>::value, "");
 
   // number of input/output dimensions
@@ -65,7 +69,7 @@ class ClippedReLU {
     const auto input = previous_layer_.Propagate(
         transformed_features, buffer + kSelfBufferSize);
     const auto output = reinterpret_cast<OutputType*>(buffer);
-#if defined(USE_AVX2)
+#if defined(USE_AVX2) && !defined (NNUE_NOINT8)
     constexpr IndexType kNumChunks = kInputDimensions / kSimdWidth;
     const __m256i kZero = _mm256_setzero_si256();
     const __m256i kOffsets = _mm256_set_epi32(7, 3, 6, 2, 5, 1, 4, 0);
@@ -110,7 +114,7 @@ class ClippedReLU {
           _mm256_packs_epi16(words0, words1), kZero), kOffsets));
     }
     constexpr IndexType kStart = kNumChunks * kSimdWidth;
-#elif defined(USE_SSSE3)
+#elif defined(USE_SSSE3) && !defined (NNUE_NOINT8)
     constexpr IndexType kNumChunks = kInputDimensions / kSimdWidth;
     const __m128i kZero = _mm_setzero_si128();
 #ifndef USE_SSE41
@@ -135,7 +139,7 @@ class ClippedReLU {
       );
     }
     constexpr IndexType kStart = kNumChunks * kSimdWidth;
-#elif defined(IS_ARM)
+#elif defined(IS_ARM) && !defined (NNUE_NOINT8)
     constexpr IndexType kNumChunks = kInputDimensions / (kSimdWidth / 2);
     const int8x8_t kZero = {0};
     const auto in = reinterpret_cast<const int32x4_t*>(input);
