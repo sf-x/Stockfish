@@ -220,9 +220,6 @@ const std::string compiler_info() {
   #if defined(USE_AVX2)
     compiler += " AVX2";
   #endif
-  #if defined(USE_SSE42)
-    compiler += " SSE42";
-  #endif
   #if defined(USE_SSE41)
     compiler += " SSE41";
   #endif

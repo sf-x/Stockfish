@@ -153,7 +153,6 @@ endif
 ifeq ($(ARCH),x86-64-sse41)
 	arch = x86_64
 	prefetch = yes
-	popcnt = yes
 	sse = yes
 	sse3 = yes
 	ssse3 = yes
@@ -170,7 +169,7 @@ ifeq ($(ARCH),x86-64-modern)
 	sse41 = yes
 endif
 
-ifeq ($(ARCH),x86-64-sse42)
+ifeq ($(ARCH),x86-64-sse41-popcnt)
 	arch = x86_64
 	prefetch = yes
 	popcnt = yes
@@ -178,7 +177,6 @@ ifeq ($(ARCH),x86-64-sse42)
 	sse3 = yes
 	ssse3 = yes
 	sse41 = yes
-	sse42 = yes
 endif
 
 ifeq ($(ARCH),x86-64-avx2)
@@ -544,8 +542,8 @@ help:
 	@echo "x86-64-avx512           > x86 64-bit with avx512 support"
 	@echo "x86-64-bmi2             > x86 64-bit with bmi2 support"
 	@echo "x86-64-avx2             > x86 64-bit with avx2 support"
-	@echo "x86-64-sse42            > x86 64-bit with sse42 support"
-	@echo "x86-64-modern           > x86 64-bit with sse41 support (x86-64-sse41)"
+	@echo "x86-64-sse41-popcnt     > x86 64-bit with sse41 and popcnt support"
+	@echo "x86-64-modern           > the same as previous (x86-64-sse41-popcnt)"
 	@echo "x86-64-sse41            > x86 64-bit with sse41 support"
 	@echo "x86-64-ssse3            > x86 64-bit with ssse3 support"
 	@echo "x86-64-sse3-popcnt      > x86 64-bit with sse3 and popcnt support"
