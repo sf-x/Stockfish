@@ -194,12 +194,17 @@ namespace Eval::NNUE::Layers {
 
   #elif defined(NNUE_NOINT8) && defined(USE_SSE2)
         __m128i sum = _mm_cvtsi32_si128(biases_[i]);
+	__m128i sum1 = _mm_setzero_si128();
         const auto row = reinterpret_cast<const __m128i*>(&weights_[offset]);
-        for (IndexType j = 0; j < kNumChunks; ++j) {
-          __m128i product = _mm_madd_epi16(
+        for (IndexType j = 0; j < kNumChunks; j += 2) {
+          __m128i product0 = _mm_madd_epi16(
               _mm_load_si128(&input_vector[j]), _mm_load_si128(&row[j]));
-          sum = _mm_add_epi32(sum, product);
+          sum = _mm_add_epi32(sum, product0);
+          __m128i product1 = _mm_madd_epi16(
+              _mm_load_si128(&input_vector[j+1]), _mm_load_si128(&row[j+1]));
+          sum1 = _mm_add_epi32(sum1, product1);
         }
+	sum = _mm_add_epi32(sum, sum1);
         sum = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, 0b00001110));
         sum = _mm_add_epi32(sum, _mm_shufflelo_epi16(sum, 0b00001110));
         output[i] = _mm_cvtsi128_si32(sum);
