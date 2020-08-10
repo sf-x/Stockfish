@@ -78,50 +78,12 @@ namespace Eval::NNUE::Layers {
       const auto out = reinterpret_cast<__m256i*>(output);
       for (IndexType i = 0; i < kNumChunks; ++i) {
         const __m256i words0 = _mm256_srai_epi16(_mm256_packs_epi32(
-
-  #if defined(__MINGW32__) || defined(__MINGW64__)
-          // HACK: Use _mm256_loadu_si256() instead of _mm256_load_si256. Because the binary
-          //       compiled with g++ in MSYS2 crashes here because the output memory is not aligned
-          //       even though alignas is specified.
-          _mm256_loadu_si256
-  #else
-          _mm256_load_si256
-  #endif
-
-          (&in[i * 4 + 0]),
-
-  #if defined(__MINGW32__) || defined(__MINGW64__)
-          _mm256_loadu_si256
-  #else
-          _mm256_load_si256
-  #endif
-
-          (&in[i * 4 + 1])), kWeightScaleBits);
+            _mm256_loadA_si256(&in[i * 4 + 0]),
+            _mm256_loadA_si256(&in[i * 4 + 1])), kWeightScaleBits);
         const __m256i words1 = _mm256_srai_epi16(_mm256_packs_epi32(
-
-  #if defined(__MINGW32__) || defined(__MINGW64__)
-          _mm256_loadu_si256
-  #else
-          _mm256_load_si256
-  #endif
-
-          (&in[i * 4 + 2]),
-
-  #if defined(__MINGW32__) || defined(__MINGW64__)
-          _mm256_loadu_si256
-  #else
-          _mm256_load_si256
-  #endif
-
-          (&in[i * 4 + 3])), kWeightScaleBits);
-
-  #if defined(__MINGW32__) || defined(__MINGW64__)
-        _mm256_storeu_si256
-  #else
-        _mm256_store_si256
-  #endif
-
-          (&out[i], _mm256_permutevar8x32_epi32(_mm256_max_epi8(
+            _mm256_loadA_si256(&in[i * 4 + 2]),
+            _mm256_loadA_si256(&in[i * 4 + 3])), kWeightScaleBits);
+        _mm256_storeA_si256(&out[i], _mm256_permutevar8x32_epi32(_mm256_max_epi8(
             _mm256_packs_epi16(words0, words1), kZero), kOffsets));
       }
       constexpr IndexType kStart = kNumChunks * kSimdWidth;
@@ -155,6 +117,24 @@ namespace Eval::NNUE::Layers {
 
         );
       }
+      constexpr IndexType kStart = kNumChunks * kSimdWidth;
+
+  #elif defined(USE_MMX) && defined(NNUE_NOINT8)
+      constexpr IndexType kNumChunks = kInputDimensions / (kSimdWidth / 2);
+      const __m64 k0x7f80s = _mm_set1_pi16(0x7f80);
+      const __m64 kZeros = _mm_setzero_si64();
+      const auto in = reinterpret_cast<const __m64*>(input);
+      const auto out = reinterpret_cast<__m64*>(output);
+      for (IndexType i = 0; i < kNumChunks; ++i) {
+        const __m64 words0 = _mm_srai_pi16(
+            _mm_packs_pi32(in[i * 2 + 0], in[i * 2 + 1]),
+            kWeightScaleBits);
+        const __m64 words0neg = _mm_cmpgt_pi16(words0, kZeros);
+        out[i] = _mm_and_si64(
+            _mm_sub_pi16(_mm_adds_pi16(words0, k0x7f80s), k0x7f80s),
+            words0signs);
+      }
+      _mm_empty();
       constexpr IndexType kStart = kNumChunks * kSimdWidth;
 
   #elif defined(USE_NEON) && !defined (NNUE_NOINT8)

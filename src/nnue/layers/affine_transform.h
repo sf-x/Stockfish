@@ -228,6 +228,9 @@ namespace Eval::NNUE::Layers {
   #endif
 
       }
+  #if defined(USE_MMX)
+      _mm_empty();
+  #endif
       return output;
     }
 
