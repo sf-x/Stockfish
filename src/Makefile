@@ -85,7 +85,9 @@ debug = no
 sanitize = no
 bits = 64
 prefetch = no
+nnue_noint8 = no
 popcnt = no
+mmx = no
 sse = no
 ssse3 = no
 sse41 = no
@@ -110,6 +112,7 @@ ifeq ($(ARCH),x86-32)
 	arch = i386
 	bits = 32
 	prefetch = yes
+	mmx = yes
 	sse = yes
 endif
 
@@ -121,6 +124,7 @@ ifeq ($(ARCH),x86-64)
 	arch = x86_64
 	prefetch = yes
 	sse = yes
+	nnue_noint8 = yes
 endif
 
 ifeq ($(ARCH),x86-64-sse3-popcnt)
@@ -432,12 +436,23 @@ ifeq ($(ssse3),yes)
 	endif
 endif
 
+ifeq ($(mmx),yes)
+	CXXFLAGS += -DUSE_MMX
+	ifeq ($(comp),$(filter $(comp),gcc clang mingw))
+		CXXFLAGS += -mmmx
+	endif
+endif
+
 ifeq ($(neon),yes)
 	CXXFLAGS += -DUSE_NEON
 endif
 
 ifeq ($(arch),x86_64)
 	CXXFLAGS += -DUSE_SSE2
+endif
+
+ifeq ($(nnue_noint8),yes)
+	CXXFLAGS += -DNNUE_NOINT8
 endif
 
 ### 3.7 pext
@@ -516,7 +531,7 @@ help:
 	@echo "x86-64-ssse3            > x86 64-bit with ssse3 support"
 	@echo "x86-64-sse3-popcnt      > x86 64-bit with sse3 and popcnt support"
 	@echo "x86-64                  > x86 64-bit generic"
-	@echo "x86-32                  > x86 32-bit (also enables SSE)"
+	@echo "x86-32                  > x86 32-bit (also enables MMX and SSE)"
 	@echo "x86-32-old              > x86 32-bit fall back for old hardware"
 	@echo "ppc-64                  > PPC 64-bit"
 	@echo "ppc-32                  > PPC 32-bit"
@@ -643,6 +658,7 @@ config-sanity:
 	 test "$(arch)" = "armv7" || test "$(arch)" = "armv8-a" || test "$(arch)" = "arm64"
 	@test "$(bits)" = "32" || test "$(bits)" = "64"
 	@test "$(prefetch)" = "yes" || test "$(prefetch)" = "no"
+	@test "$(nnue_noint8)" = "yes" || test "$(nnue_noint8)" = "no"
 	@test "$(popcnt)" = "yes" || test "$(popcnt)" = "no"
 	@test "$(sse)" = "yes" || test "$(sse)" = "no"
 	@test "$(ssse3)" = "yes" || test "$(ssse3)" = "no"

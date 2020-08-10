@@ -33,6 +33,9 @@
 #elif defined(USE_SSE2)
 #include <emmintrin.h>
 
+#elif defined(USE_MMX)
+#include <mmintrin.h>
+
 #elif defined(USE_NEON)
 #include <arm_neon.h>
 #endif
@@ -79,6 +82,9 @@ namespace Eval::NNUE {
   #elif defined(USE_SSE2)
   constexpr std::size_t kSimdWidth = 16;
 
+  #elif defined(USE_MMX)
+  constexpr std::size_t kSimdWidth = 8;
+
   #elif defined(USE_NEON)
   constexpr std::size_t kSimdWidth = 16;
   #endif
@@ -86,7 +92,11 @@ namespace Eval::NNUE {
   constexpr std::size_t kMaxSimdWidth = 32;
 
   // Type of input feature after conversion
+#ifndef NNUE_NOINT8
   using TransformedFeatureType = std::uint8_t;
+#else
+  using TransformedFeatureType = std::uint16_t;
+#endif
   using IndexType = std::uint32_t;
 
   // Round n up to be a multiple of base
